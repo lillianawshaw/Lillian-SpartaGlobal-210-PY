@@ -15,7 +15,7 @@ def divisor(a):
     return list
 
 
-print(divisor(88))
+print(divisor(884))
 # A1a:
 
 
@@ -27,6 +27,8 @@ print("\nQ1b\n")
 
 # A1b:
 def factor(a, b):
+    if a == 0 or b == 0:
+        return False
     if a == b:
         return True
     if a < b:
