@@ -66,7 +66,7 @@ alphabet = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
 # print(alpha())
 
 def alpha(val):
-        return alphabet.index(val)
+    return alphabet.index(val)
 
 print("\nQ2b\n")
 # Q2b: create a function which takes a persons name as an input string and returns an
@@ -76,7 +76,6 @@ name = input("state your name ")
 def IDMaker(name):
     num = ""
     for i in name:
-
         num = num + str(alpha(i.lower()))
     return num
 
