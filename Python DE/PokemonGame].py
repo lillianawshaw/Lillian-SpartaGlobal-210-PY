@@ -16,6 +16,69 @@ import json
 Pokemon_Team = []
 Enemy_Pokemon_Team = []
 
+Weakness_dict = {
+                'grass' : ['fire', 'ice', 'poison', 'flying', 'bug'],
+                 'normal' : ['fighting'],
+                'fire' : ['water', 'ground', 'rock'],
+                'water' : ['electric', 'grass'],
+                'electric' : ['ground'],
+                'ice' : ['fire', 'fighting', 'rock', 'steel'],
+                'fighting' : ['flying', 'psychic', 'fairy'],
+                'poison' : ['ground', 'psychic'],
+                'ground' : ['water', 'grass', 'ice'],
+                'flying' : ['electric', 'ice', 'rock'],
+                'psychic' : ['bug', 'ghost', 'dark'],
+                'bug' : ['fire', 'flying', 'rock'],
+                'rock' : ['water', 'grass', 'fighting', 'ground', 'steel'],
+                'ghost' : ['ghost', 'dark'],
+                'dragon' : ['ice', 'dragon', 'fairy'],
+                'dark' : ['fighting', 'bug', 'fairy'],
+                'steel' : ['fire', 'fighting', 'ground'],
+                'fairy' : ['poison', 'steel']
+                 }
+
+Resists_dict = {
+                'grass' : ['water', 'electric', 'grass', 'ground', 'bug'],
+                'normal' : [],
+                'fire' : ['fire', 'grass', 'ice', 'bug', 'steel', 'fairy'],
+                'water' : ['fire', 'water', 'ice', 'steel'],
+                'electric' : ['electric', 'flying', 'steel'],
+                'ice' : ['ice'],
+                'fighting' : ['bug', 'rock', 'dark'],
+                'poison' : ['grass', 'fighting', 'poison', 'bug', 'fairy'],
+                'ground' : ['poison', 'rock'],
+                'flying' : ['grass', 'fighting', 'bug'],
+                'psychic' : ['fighting', 'psychic'],
+                'bug' : ['grass', 'fighting', 'ground'],
+                'rock' : ['normal', 'fire', 'poison', 'flying'],
+                'ghost' : ['poison', 'bug'],
+                'dragon' : ['fire', 'water', 'electric', 'grass'],
+                'dark' : ['dark', 'ghost'],
+                'steel' : ['normal', 'grass', 'ice', 'flying', 'psychic', 'bug', 'rock', 'dragon', 'steel', 'fairy'],
+                'fairy' : ['fighting', 'bug', 'dark']
+                 }
+
+Negate_dict = {
+                'grass' : [],
+                 'normal' : ['ghost'],
+                'fire' : [],
+                'water' : [],
+                'electric' : [],
+                'ice' : [],
+                'fighting' : [],
+                'poison' : [],
+                'ground' : ['electric'],
+                'flying' : ['ground'],
+                'psychic' : [],
+                'bug' : [],
+                'rock' : [],
+                'ghost' : ['normal', 'fighting'],
+                'dragon' : [],
+                'dark' : ['psychic'],
+                'steel' : ['poison'],
+                'fairy' : ['dragon']
+                 }
+
 pokemon_req = requests.get("https://pokeapi.co/api/v2/pokemon?limit=10000") # gets a list of pokemon
 move_req = requests.get("https://pokeapi.co/api/v2/move/") # gets a list of moves
 
@@ -74,6 +137,19 @@ class Pokemon():
         self.KO = False
         self.move_list = self.GetMoves()
 
+    def CompareTypes(self, Movetype, EnemyType):
+        print(EnemyType)
+        print(Movetype)
+        if Weakness_dict[EnemyType].__contains__(Movetype):
+            print("Super Effective move against " + EnemyType)
+            print("2")
+            return 2
+        if Resists_dict[EnemyType].__contains__(Movetype):
+            print("Not Effective move against " + EnemyType)
+            return 0.5
+        if Negate_dict[EnemyType].__contains__(Movetype):
+            print("This move is negated by " + EnemyType)
+            return 0
 
     def SelectMoves(self):
         while True:
@@ -84,26 +160,45 @@ class Pokemon():
     def Attack(self, Enemy):
         self.DisplayMoves()
         move = self.move_list[self.SelectMoves()]
+
         if move.target == "target":
             if move.accuracy >= random.randint(1, 100):
                 if move.damageclass == 'physical':
                     dmg = (move.power + (self.attack * random.randint(0, 1)))
                     protection = (Enemy.defense * random.randint(0, 1))
                     total = dmg - protection
+                    total = total * self.CompareTypes(move.type, Enemy.type)
+                    if total < 0:
+                        #stops accidental healing if dmg is lower than protect
+                        total = 0
                     Enemy.hp = Enemy.hp - (dmg - protection)
                     print(self.name + " did " + str(total) + " points of dmg")
                 if move.damageclass == 'special':
                     dmg = (move.power + (self.special_attack * random.randint(0, 1)))
                     protection = (Enemy.special_defense * random.randint(0, 1))
                     total = dmg - protection
+                    total = total * self.CompareTypes(move.type, Enemy.type)
+                    if total < 0:
+                        #stops accidental healing if dmg is lower than protect
+                        total = 0
                     print(self.name + " did " + str(total) + " points of dmg")
                     Enemy.hp = Enemy.hp - (dmg - protection)
-            if Enemy.CheckAlive() != True:
-                print("")
         #moves that are buffs
         else:
             if move.stat_change == 'defense':
                 self.defense = self.defense + 20
+                print("Defense has been raised to: " + str(self.defense) )
+            if move.stat_change == 'speed':
+                self.speed = self.speed + 20
+                print("Speed has been raised to: " + str(self.speed) )
+
+            if move.stat_change == 'special_defense':
+                self.special_defense = self.special_defense + 20
+                print("Special Defense has been raised to: " + str(self.special_defense))
+
+            if move.stat_change == 'special_attack':
+                self.special_attack = self.special_attack + 20
+                print("Special Attack has been raised to: " + str(self.special_attack))
 
     def Switch(self, pkt):
         counter = 0
@@ -205,7 +300,7 @@ while True:
     turn_counter = 0
 
     Player = CheckActive(Pokemon_Team)
-    print(Player)
+
     Enemy = CheckActive(Enemy_Pokemon_Team)
     if Player.AllDeadDave(Pokemon_Team):
         print("Player 1 team is KO \n You white out...")
