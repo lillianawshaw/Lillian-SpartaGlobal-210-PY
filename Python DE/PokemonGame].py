@@ -96,6 +96,11 @@ class Move():
         self.name = move['name']
         self.target = 'special'
         self.power = move['power']
+        if move['accuracy'] != None:
+            self.accuracy = move['accuracy']
+        else:
+            self.accuracy = 0
+        self.accuracy = 0
         if self.power == None:
             self.power = 0
         #none target attacks (buffs) do not have accuracy values
@@ -119,6 +124,14 @@ class Move():
                 self.type = 'normal'
                 self.damageclass = 'status'
                 self.stat_change = 'defense'
+
+            if move['name'] == 'after-you':
+                self.accuracy = 0
+                self.power = 0
+                self.pp = 15
+                self.type = 'normal'
+                self.damageclass = 'status'
+                self.stat_change = 'speed'
 
 
             if move['damage_class']['name'] == 'status' and move['accuracy'] is None:
@@ -173,7 +186,9 @@ class Pokemon():
         self.type = pk['types'][0]['type']['name']
         self.active = False
         self.KO = False
-        self.Stealth_Rock = False
+        self.move_list = self.GetMoves()
+        self.Dangerous_Terrain = False
+
 
 
     def CompareTypes(self, Movetype, EnemyType):
@@ -197,6 +212,8 @@ class Pokemon():
             if int(choice) in [0, 1, 2, 3]:
                 return int(choice)
 
+
+
     def Attack(self, Enemy):
         self.DisplayMoves()
         move = self.move_list[self.SelectMoves()]
@@ -204,14 +221,19 @@ class Pokemon():
         #Special move that deletes 50% of your enemy health
         if move.target == 'special':
 
-            if move.name == 'stealth-rock':
-                Enemy.Stealth_Rock = True
+            if move.name == 'lock-on':
+                buff = self.move_list[random.randint(0, 3)]
+                print(buff.name + " can't miss!")
+                buff.accuracy = 100
+
+            if move.name == 'stealth-rock' or move.name == 'spikes':
+                Enemy.Dangerous_Terrain = True
             ##"Spreads sharp rocks around the opposing field, "
             ##"damaging any Pokémon that enters the field for 1/8 its max HP. "
             ##"This damage is affected by the entering Pokémon's susceptibility to rock moves. rapid "
             ##"spin removes this effect from its user's side of the field."
 
-                print("Spreads sharp rocks around the opposing field, damaging any Pokémon that enters the field for 1/8 its max HP. \n" )
+                print("Sharp rocks spread around the opposing field, damaging any Pokémon that enters the field for 1/8 its max HP. \n" )
 
             if move.name == 'fillet-away':
                 print("Fillet Away carves 50% off " + Enemy.name + " hp\n")
@@ -219,6 +241,8 @@ class Pokemon():
                     Enemy.hp = Enemy.hp / 2
                 else:
                     Enemy.ho = (Enemy.hp + 1) / 2
+
+
         
         if move.target == "target":
             print(self.name + " attacks with: " + move.name + "\n")
@@ -254,7 +278,7 @@ class Pokemon():
             if move.stat_change == 'attack':
                 self.attack = self.attack + 20
 
-                print("Defense has been raised to: " + str(self.attack))
+                print("Attack has been raised to: " + str(self.attack))
             if move.stat_change == 'defense' or move.stat_change == 'evasion':
                 self.defense = self.defense + 20
                 print("Defense has been raised to: " + str(self.defense))
@@ -284,8 +308,8 @@ class Pokemon():
 
                 print(pkt[int(choice)].name + " is now active")
                 for i in pkt:
-                    if i.Stealth_rock == True:
-                        print("Stealth rocks active, you take an 1/8th of mxh hp")
+                    if i.Dangerous_Terrain == True:
+                        print("Dangerous Terrian: You take an 1/8th of mxh hp in damage")
                         pkt[int(choice)].hp = round((pkt[int(choice)].hp / 8))
                 break
 
