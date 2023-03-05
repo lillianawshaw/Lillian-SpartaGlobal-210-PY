@@ -15,6 +15,7 @@ import json
 #TEAMS
 Pokemon_Team = []
 Enemy_Pokemon_Team = []
+Special_Moves = ['fillet-away']
 
 Weakness_dict = {
                 'grass' : ['fire', 'ice', 'poison', 'flying', 'bug'],
@@ -79,8 +80,10 @@ Negate_dict = {
                 'fairy' : ['dragon']
                  }
 
-pokemon_req = requests.get("https://pokeapi.co/api/v2/pokemon?limit=10000") # gets a list of pokemon
-move_req = requests.get("https://pokeapi.co/api/v2/move/") # gets a list of moves
+
+
+pokemon_req = requests.get("https://pokeapi.co/api/v2/pokemon?limit=1200") # gets a list of pokemon
+move_req = requests.get("https://pokeapi.co/api/v2/move/?limit=918")# gets a list of moves
 
 data = pokemon_req.json()
 movedata = move_req.json()
@@ -91,29 +94,64 @@ class Move():
         move_response = requests.get(random_move["url"])
         move = move_response.json()
         self.name = move['name']
-
+        self.target = 'special'
         self.power = move['power']
+        if self.power == None:
+            self.power = 0
         #none target attacks (buffs) do not have accuracy values
         try:
+            #print(move['stat_changes'])
             #unmissable move with power
-            if move['accuracy'] == 'null' and not move['power'] is None:
+            if move['accuracy'] == 'null' and self.power != 0:
                 self.accuracy = 100
                 self.target = 'target'
+                #print("Succes")
 
             if not move['accuracy'] is None:
                 self.accuracy = int(move['accuracy'])
                 self.target = 'target'
-            else:
+                #print("Succes")
+
+            if move['name'] == 'shelter':
                 self.accuracy = 0
-                self.stat_change = move['stat_changes'][0]['stat']['name']
+                self.power = 0
+                self.pp = 15
+                self.type = 'normal'
+                self.damageclass = 'status'
+                self.stat_change = 'defense'
+
+
+            if move['damage_class']['name'] == 'status' and move['accuracy'] is None:
+                # print(move['name'])
+                # print(move['stat_changes'])
+                # print(move['stat_changes'][0])
+                if move['stat_changes'] != []:
+                    self.accuracy = 0
+                    self.stat_change = move['stat_changes'][0]['stat']['name']
+                    self.target = 'self'
+                else:
+                    self.accuracy = 0
+                    self.stat_change = 'splash'
+                    self.target = 'self'
+
+            elif move['damage_class']['name'] == 'status' and int(move['accuracy']) > 0:
+                self.accuracy = int(move['accuracy'])
+                self.stat_change = 'evasion'
                 self.target = 'self'
+
         except:
+            print("MISTAKE: " + self.name + " : " + str(self.power) + " : " + str(move['accuracy']) + " " + move['target']['name'])
+            input(" ")
             self.accuracy = 50
             self.stat_change = 'defense'
             self.target = 'target'
+        if move['pp'] is None:
+            self.pp = 5
+            self.maxpp = 5
+        else:
+            self.pp = int(move['pp'])
+            self.maxpp = int(move['pp'])
 
-        self.pp = int(move['pp'])
-        self.maxpp = int(move['pp'])
         self.damageclass = move['damage_class']['name']
         self.type = move['type']['name']
         if self.power is None:
@@ -135,21 +173,23 @@ class Pokemon():
         self.type = pk['types'][0]['type']['name']
         self.active = False
         self.KO = False
-        self.move_list = self.GetMoves()
+        self.Stealth_Rock = False
+
 
     def CompareTypes(self, Movetype, EnemyType):
-        print(EnemyType)
-        print(Movetype)
-        if Weakness_dict[EnemyType].__contains__(Movetype):
-            print("Super Effective move against " + EnemyType)
+
+        if Weakness_dict[EnemyType].count(Movetype) > 0:
+            print("Super Effective move against " + EnemyType + "\n")
             print("2")
             return 2
-        if Resists_dict[EnemyType].__contains__(Movetype):
-            print("Not Effective move against " + EnemyType)
+        if Resists_dict[EnemyType].count(Movetype) > 0:
+            print("Not Effective move against " + EnemyType + "\n")
             return 0.5
-        if Negate_dict[EnemyType].__contains__(Movetype):
-            print("This move is negated by " + EnemyType)
+        if Negate_dict[EnemyType].count(Movetype) > 0:
+            print("This move is negated by " + EnemyType + "\n")
             return 0
+        print("Normal dmg")
+        return 1
 
     def SelectMoves(self):
         while True:
@@ -160,8 +200,28 @@ class Pokemon():
     def Attack(self, Enemy):
         self.DisplayMoves()
         move = self.move_list[self.SelectMoves()]
+        
+        #Special move that deletes 50% of your enemy health
+        if move.target == 'special':
 
+            if move.name == 'stealth-rock':
+                Enemy.Stealth_Rock = True
+            ##"Spreads sharp rocks around the opposing field, "
+            ##"damaging any Pokémon that enters the field for 1/8 its max HP. "
+            ##"This damage is affected by the entering Pokémon's susceptibility to rock moves. rapid "
+            ##"spin removes this effect from its user's side of the field."
+
+                print("Spreads sharp rocks around the opposing field, damaging any Pokémon that enters the field for 1/8 its max HP. \n" )
+
+            if move.name == 'fillet-away':
+                print("Fillet Away carves 50% off " + Enemy.name + " hp\n")
+                if Enemy.hp % 2 == 0:
+                    Enemy.hp = Enemy.hp / 2
+                else:
+                    Enemy.ho = (Enemy.hp + 1) / 2
+        
         if move.target == "target":
+            print(self.name + " attacks with: " + move.name + "\n")
             if move.accuracy >= random.randint(1, 100):
                 if move.damageclass == 'physical':
                     dmg = (move.power + (self.attack * random.randint(0, 1)))
@@ -172,7 +232,8 @@ class Pokemon():
                         #stops accidental healing if dmg is lower than protect
                         total = 0
                     Enemy.hp = Enemy.hp - (dmg - protection)
-                    print(self.name + " did " + str(total) + " points of dmg")
+                    print(self.name + " did " + str(total) + " points of dmg\n")
+                    move.pp = move.pp - 1
                 if move.damageclass == 'special':
                     dmg = (move.power + (self.special_attack * random.randint(0, 1)))
                     protection = (Enemy.special_defense * random.randint(0, 1))
@@ -181,13 +242,22 @@ class Pokemon():
                     if total < 0:
                         #stops accidental healing if dmg is lower than protect
                         total = 0
-                    print(self.name + " did " + str(total) + " points of dmg")
+                    print(self.name + " did " + str(total) + " points of dmg\n")
                     Enemy.hp = Enemy.hp - (dmg - protection)
+                    move.pp = move.pp - 1
+            else:
+                print("The move misses...\n")
+
         #moves that are buffs
-        else:
-            if move.stat_change == 'defense':
+        if move.target == 'self':
+            move.pp = move.pp - 1
+            if move.stat_change == 'attack':
+                self.attack = self.attack + 20
+
+                print("Defense has been raised to: " + str(self.attack))
+            if move.stat_change == 'defense' or move.stat_change == 'evasion':
                 self.defense = self.defense + 20
-                print("Defense has been raised to: " + str(self.defense) )
+                print("Defense has been raised to: " + str(self.defense))
             if move.stat_change == 'speed':
                 self.speed = self.speed + 20
                 print("Speed has been raised to: " + str(self.speed) )
@@ -200,6 +270,7 @@ class Pokemon():
                 self.special_attack = self.special_attack + 20
                 print("Special Attack has been raised to: " + str(self.special_attack))
 
+
     def Switch(self, pkt):
         counter = 0
         for i in pkt:
@@ -210,7 +281,12 @@ class Pokemon():
             choice = self.SelectPK()
             if pkt[int(choice)].KO == False:
                 pkt[int(choice)].active = True
+
                 print(pkt[int(choice)].name + " is now active")
+                for i in pkt:
+                    if i.Stealth_rock == True:
+                        print("Stealth rocks active, you take an 1/8th of mxh hp")
+                        pkt[int(choice)].hp = round((pkt[int(choice)].hp / 8))
                 break
 
 
@@ -302,7 +378,10 @@ while True:
     Player = CheckActive(Pokemon_Team)
 
     Enemy = CheckActive(Enemy_Pokemon_Team)
-    if Player.AllDeadDave(Pokemon_Team):
+
+
+    if Player.AllDeadDave(Pokemon_Team) or round_counter > 50:
+        #should be unreachable code but nice catch to prevent loops
         print("Player 1 team is KO \n You white out...")
         break
     if Enemy.AllDeadDave(Enemy_Pokemon_Team):
@@ -319,8 +398,11 @@ while True:
         if Enemy.CheckAlive() == False:
             print(Enemy.name + " Is KO")
             Enemy.KO = True
+            Enemy.hp = 0
             if Enemy.AllDeadDave(Enemy_Pokemon_Team) is False:
                 Enemy.Switch(Enemy_Pokemon_Team)
+                Enemy = CheckActive(Enemy_Pokemon_Team)
+                print()
             else:
                 print("Enemy team is deafted, you win")
                 break
@@ -332,34 +414,47 @@ while True:
         if Player.CheckAlive() == False:
             print(Player.name + " Is KO")
             Player.KO = True
+            Player.hp = 0
             if Player.AllDeadDave(Pokemon_Team) is False:
                 Player.Switch(Pokemon_Team)
+                Player = CheckActive(Pokemon_Team)
             else:
                 print("Enemy team is deafted, you win")
                 break
     else:
         print(Enemy.name + " is faster so goes first")
+        print("Players 2 Pokemon " + Enemy.name + " on " + str(
+            Enemy.hp) + "hp and is fighting: " + Player.name + " on " + str(Player.hp) + "hp \n")
+
         Enemy.TurnInput(Player, Enemy_Pokemon_Team)
         if Player.CheckAlive() == False:
             print(Player.name + " Is KO")
             Player.KO = True
+            Player.hp = 0
             if Player.AllDeadDave(Pokemon_Team) is False:
                 Player.Switch(Pokemon_Team)
+                Player = CheckActive(Pokemon_Team)
             else:
                 print("Enemy team is deafted, you win")
                 break
         print("Next players turn \n")
+        print("Players 1 Pokemon " + Player.name + " on " + str(
+            Player.hp) + "hp and is fighting: " + Enemy.name + " on " + str(Enemy.hp) + "hp \n")
+
         Player.TurnInput(Enemy, Pokemon_Team)
         if Enemy.CheckAlive() == False:
-            print(Enemy.name + "Is KO")
+            print(Enemy.name + " Is KO")
             Enemy.KO = True
+            Enemy.hp = 0
             if Enemy.AllDeadDave(Enemy_Pokemon_Team) is False:
                 Enemy.Switch(Enemy_Pokemon_Team)
+                Enemy = CheckActive(Enemy_Pokemon_Team)
             else:
                 print("Enemy team is deafted, you win")
                 break
     round_counter = round_counter + 1
 
+input("Game over!")
 
 
 
