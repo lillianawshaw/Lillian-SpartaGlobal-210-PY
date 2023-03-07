@@ -3,6 +3,14 @@ from google.cloud import storage
 
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = "seraphic-jet-379316-7f41a3c9cfe7.json"
 
+def list_blobs(bucket_name):
+    storage_client = storage.Client()
+    blobs = storage_client.list_blobs(bucket_name)
+    for blob in blobs:
+        print(blob.name)
+
+list_blobs("pythongrab")
+
 # client = storage.Client()
 # bucket = client.get_bucket('pythongrab')
 # blob = bucket.blob("Ideas")

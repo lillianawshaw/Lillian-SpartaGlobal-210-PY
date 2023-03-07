@@ -15,7 +15,6 @@ import json
 #TEAMS
 Pokemon_Team = []
 Enemy_Pokemon_Team = []
-Special_Moves = ['fillet-away']
 
 Weakness_dict = {
                 'grass' : ['fire', 'ice', 'poison', 'flying', 'bug'],
@@ -190,29 +189,19 @@ class Pokemon():
         self.Dangerous_Terrain = False
 
 
+    def TurnInput(self, Enemy, pkt):
 
-    def CompareTypes(self, Movetype, EnemyType):
-
-        if Weakness_dict[EnemyType].count(Movetype) > 0:
-            print("Super Effective move against " + EnemyType + "\n")
-            print("2")
-            return 2
-        if Resists_dict[EnemyType].count(Movetype) > 0:
-            print("Not Effective move against " + EnemyType + "\n")
-            return 0.5
-        if Negate_dict[EnemyType].count(Movetype) > 0:
-            print("This move is negated by " + EnemyType + "\n")
-            return 0
-        print("Normal dmg")
-        return 1
-
-    def SelectMoves(self):
         while True:
-            choice = input("Select a number [0,1,2,3] \n ")
-            if int(choice) in [0, 1, 2, 3]:
-                return int(choice)
-
-
+            choice = input("1. Attack \n2. Switch \n ")
+            if int(choice) == 1:
+                self.Attack(Enemy)
+                break
+            if int(choice) == 2:
+                self.Switch(pkt)
+                break
+                # or choice == 2:
+                # return choice
+                #
 
     def Attack(self, Enemy):
         self.DisplayMoves()
@@ -294,6 +283,32 @@ class Pokemon():
                 self.special_attack = self.special_attack + 20
                 print("Special Attack has been raised to: " + str(self.special_attack))
 
+    def DisplayMoves(self):
+        counter = 0
+        for i in self.move_list:
+            print(str(counter) + ". " + i.name + "  ({}/{})".format(i.pp, i.maxpp))
+            counter = counter + 1
+
+    def SelectMoves(self):
+        while True:
+            choice = input("Select a number [0,1,2,3] \n ")
+            if int(choice) in [0, 1, 2, 3]:
+                return int(choice)
+
+    def CompareTypes(self, Movetype, EnemyType):
+
+        if Weakness_dict[EnemyType].count(Movetype) > 0:
+            print("Super Effective move against " + EnemyType + "\n")
+            print("2")
+            return 2
+        if Resists_dict[EnemyType].count(Movetype) > 0:
+            print("Not Effective move against " + EnemyType + "\n")
+            return 0.5
+        if Negate_dict[EnemyType].count(Movetype) > 0:
+            print("This move is negated by " + EnemyType + "\n")
+            return 0
+        print("Normal dmg")
+        return 1
 
     def Switch(self, pkt):
         counter = 0
@@ -320,27 +335,9 @@ class Pokemon():
             return choice
 
 
-    def DisplayMoves(self):
-        counter = 0
-        for i in self.move_list:
-            print(str(counter) + ". " + i.name + "  ({}/{})".format(i.pp, i.maxpp))
-            counter = counter + 1
-
-    def TurnInput(self, Enemy, pkt):
-
-        while True:
-            choice = input("1. Attack \n2. Switch \n ")
-            if int(choice) == 1:
-                self.Attack(Enemy)
-                break
-            if int(choice) == 2:
-                self.Switch(pkt)
-                break
-                # or choice == 2:
-                # return choice
-                #
 
     def GetMoves(self):
+        # creates four random moves for a pk to have
         temp_move_list = []
         for i in range(4):
             temp_move_list.append(Move())
@@ -391,6 +388,11 @@ def CheckActive(pkt):
 
 ## pokemon has been created, teams decked out
 ## game play loop:
+#Make pk active
+# check the speed comparision
+#ply loop of Turn input:
+# TI -> ATTack -> display moves -> select moves - switch (if neccesary) - check alive
+
 
 round_counter = 0
 print("Welcome to Pokemon")
@@ -398,7 +400,7 @@ Pokemon_Team[0].active = True
 Enemy_Pokemon_Team[0].active = True
 while True:
     turn_counter = 0
-
+    #pk that is active so will be subject for all the calls
     Player = CheckActive(Pokemon_Team)
 
     Enemy = CheckActive(Enemy_Pokemon_Team)
