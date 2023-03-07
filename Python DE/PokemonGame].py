@@ -240,23 +240,23 @@ class Pokemon():
                     dmg = (move.power + (self.attack * random.randint(0, 1)))
                     protection = (Enemy.defense * random.randint(0, 1))
                     total = dmg - protection
-                    total = total * self.CompareTypes(move.type, Enemy.type)
+                    total = round(total * self.CompareTypes(move.type, Enemy.type))
                     if total < 0:
                         #stops accidental healing if dmg is lower than protect
                         total = 0
-                    Enemy.hp = Enemy.hp - (dmg - protection)
+                    Enemy.hp = Enemy.hp - (total)
                     print(self.name + " did " + str(total) + " points of dmg\n")
                     move.pp = move.pp - 1
                 if move.damageclass == 'special':
                     dmg = (move.power + (self.special_attack * random.randint(0, 1)))
                     protection = (Enemy.special_defense * random.randint(0, 1))
                     total = dmg - protection
-                    total = total * self.CompareTypes(move.type, Enemy.type)
+                    total = round(total * self.CompareTypes(move.type, Enemy.type))
                     if total < 0:
                         #stops accidental healing if dmg is lower than protect
                         total = 0
                     print(self.name + " did " + str(total) + " points of dmg\n")
-                    Enemy.hp = Enemy.hp - (dmg - protection)
+                    Enemy.hp = Enemy.hp - (total)
                     move.pp = move.pp - 1
             else:
                 print("The move misses...\n")
